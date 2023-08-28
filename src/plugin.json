@@ -19,7 +19,12 @@
       "large": "img/logo.svg"
     },
     "links": [],
-    "screenshots": [],
+    "screenshots": [
+      {
+        "name": "Bar chart",
+        "path": "img/screen.png"
+      }
+    ],
     "version": "%VERSION%",
     "updated": "%TODAY%"
   },
