@@ -35,3 +35,6 @@ e2e-results/
 .eslintcache
 # mac...
 .DS_Store
+
+# playground file
+playground
