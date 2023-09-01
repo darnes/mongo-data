@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"reflect"
 
-	// "time"
-
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
@@ -31,21 +29,38 @@ var (
 
 type configModel struct {
 	ConnectionString string `json:"mongoConnectionString"`
-	// Collection       string `json:"collection"`
+}
+
+type secretConfigModel struct {
+	Password         string `json:"password"`
+	SSLClientCertKey string `json:"sslClientCert"`
 }
 
 // NewDatasource creates a new datasource instance.
 func NewDatasource(s backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
 
-	backend.Logger.Info("new-data-source", "set", s)
+	backend.Logger.Info("new-data-source", "data", s.JSONData, "d", s.DecryptedSecureJSONData)
 	cm := configModel{}
 	err := json.Unmarshal(s.JSONData, &cm)
 	if err != nil {
 		backend.Logger.Error("failed to unmarshal config from JSONData", err)
 		return nil, errors.New("wrong configuration")
 	}
-	backend.Logger.Info("checking config ", "c", cm, "cs", cm.ConnectionString)
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(cm.ConnectionString))
+	sm := secretConfigModel{}
+	sm.Password = s.DecryptedSecureJSONData["password"]
+	sm.SSLClientCertKey = s.DecryptedSecureJSONData["sslClientCert"]
+
+	backend.Logger.Info("checking config ", "c", cm, "sm", sm)
+	clientOptions := options.Client().ApplyURI(cm.ConnectionString)
+	err = updateClientWithSecrets(clientOptions, sm)
+	if err != nil {
+		backend.Logger.Error("failed setting secret credentials", err)
+		return nil, err
+	}
+
+	client, err := mongo.Connect(context.TODO(), clientOptions)
+	// up requires check that it works at all
+
 	// here are mostly URL parsing errors
 	if err != nil {
 		backend.Logger.Info("failed connect to mongo", "err", err)

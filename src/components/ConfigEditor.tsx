@@ -1,24 +1,16 @@
-import React, { ChangeEvent } from 'react';
-// import { InlineField, Input, SecretInput } from '@grafana/ui';
-import { InlineField, Input } from '@grafana/ui';
-import { DataSourcePluginOptionsEditorProps } from '@grafana/data';
-// import { MyDataSourceOptions, MySecureJsonData } from '../types';
-import { MyDataSourceOptions } from '../types';
+import * as React from 'react';
+import { ChangeEvent } from 'react'
 
-interface Props extends DataSourcePluginOptionsEditorProps<MyDataSourceOptions> { }
+import { Input, SecretInput, SecretTextArea, Field, FieldSet } from '@grafana/ui';
+import { DataSourcePluginOptionsEditorProps } from '@grafana/data';
+import { DataSourceOptions, SecureJsonData } from '../types';
+
+
+interface Props extends DataSourcePluginOptionsEditorProps<DataSourceOptions> { }
 
 export function ConfigEditor(props: Props) {
   const { onOptionsChange, options } = props;
 
-  // const onPathChange = (event: ChangeEvent<HTMLInputElement>) => {
-  //   const jsonData = {
-  //     ...options.jsonData,
-  //     path: event.target.value,
-  //   };
-  //   onOptionsChange({ ...options, jsonData });
-  // };
-
-  // Secure field (only sent to the backend)
   const onMongoConnectionStringChange = (event: ChangeEvent<HTMLInputElement>) => {
     const jsonData = {
       ...options.jsonData,
@@ -31,54 +23,88 @@ export function ConfigEditor(props: Props) {
   };
 
 
-  // const onResetMongoConnectionString = () => {
-  //   onOptionsChange({
-  //     ...options,
-  //     secureJsonFields: {
-  //       ...options.secureJsonFields,
-  //       mongoConnectionString: false,
-  //     },
-  //     secureJsonData: {
-  //       ...options.secureJsonData,
-  //       mongoConnectionString: '',
-  //     },
-  //   });
-  // };
-  const { jsonData } = options;
-  // const { jsonData, secureJsonFields } = options;
-  // const { secureJsonFields } = options;
-  // const secureJsonData = (options.secureJsonData || {}) as MySecureJsonData;
+  const onPasswordReset = () => {
+    onOptionsChange({
+      ...options,
+      secureJsonFields: {
+        ...options.secureJsonFields,
+        password: false,
+      },
+      secureJsonData: {
+        ...options.secureJsonData,
+        password: '',
+      },
+    });
+  };
+  const onPasswordChange = (event: ChangeEvent<HTMLInputElement>) => {
+    // not sure why I don't need to update secureJsonFields ... anyway
+    onOptionsChange({
+      ...options,
+      secureJsonData: {
+        ...options.secureJsonData,
+        password: event.target.value,
+      },
+    });
+  };
+  const onSSLClientCertReset = () => {
+    onOptionsChange({
+      ...options,
+      secureJsonFields: {
+        ...options.secureJsonFields,
+        sslClientCert: false,
+      },
+      secureJsonData: {
+        ...options.secureJsonData,
+        sslClientCert: '',
+      },
+    });
+  };
+  const onSSLClientCertChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+    // not sure why I don't need to update secureJsonFields ... anyway
+    onOptionsChange({
+      ...options,
+      secureJsonData: {
+        ...options.secureJsonData,
+        sslClientCert: event.target.value,
+      },
+    });
+  };
+
+  const { jsonData, secureJsonFields } = options;
+  const secureJsonData = (options.secureJsonData || {}) as SecureJsonData;
 
   return (
-    <div className="gf-form-group">
-      {/* <InlineField label="Path" labelWidth={12}>
-        <Input
-          onChange={onPathChange}
-          value={jsonData.path || ''}
-          placeholder="json field returned to frontend"
-          width={40}
-        />
-      </InlineField>*/}
-      {/* mongodb://mongo:27017/?directConnection=true&serverSelectionTimeoutMS=2000 */}
-      <InlineField label="Connection String" labelWidth={12}>
+    <FieldSet>
+      {/* <InlineFieldRow> */}
+      <Field label="Connection String" >
         <Input
           value={jsonData.mongoConnectionString || ''}
-          placeholder="mongodb://username:password@host:port/?directConnection=true&serverSelectionTimeoutMS=2000"
-          width={100}
+          placeholder="mongodb://username@host:port/?directConnection=true"
           onChange={onMongoConnectionStringChange}
+          width={90}
         />
-      </InlineField>
-      {/* TBD find sort of help tool tip: Mongo DB connection string(Grafana backend Should be able to use it to connect) */}
-      {/* <InlineField label="Connection String" labelWidth={20} >
+      </Field>
+      <Field label="Password" >
         <SecretInput
-          isConfigured={(secureJsonFields && secureJsonFields.mongoConnectionString) as boolean}
-          value={secureJsonData.mongoConnectionString || ''}
-          placeholder="mongodb://mongo:27017/?directConnection=true&serverSelectionTimeoutMS=2000"
-          width={40}
-          onReset={onResetMongoConnectionString}
-          onChange={onMongoConnectionStringChange}
+          isConfigured={(secureJsonFields && secureJsonFields.password) as boolean}
+          value={secureJsonData.password || ''}
+          placeholder="password"
+          width={90}
+          onReset={onPasswordReset}
+          onChange={onPasswordChange}
         />
-      </InlineField> */}
-    </div>
+      </Field>
+      <Field label="SSL Client Certificate" >
+        <SecretTextArea
+          isConfigured={(secureJsonFields && secureJsonFields.sslClientCert) as boolean}
+          cols={90} // of 200
+          value={secureJsonData.sslClientCert || ''}
+          placeholder="SSL Client  Certificate contents"
+          onReset={onSSLClientCertReset}
+          onChange={onSSLClientCertChange}
+        />
+      </Field>
+      {/* </InlineFieldRow> */}
+    </FieldSet>
   );
 }

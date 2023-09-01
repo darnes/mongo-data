@@ -2,9 +2,9 @@ import React, { ChangeEvent } from 'react';
 import { InlineField, Input, TextArea } from '@grafana/ui';
 import { QueryEditorProps } from '@grafana/data';
 import { DataSource } from '../datasource';
-import { MyDataSourceOptions, MyQuery } from '../types';
+import { DataSourceOptions, MyQuery } from '../types';
 
-type Props = QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions>;
+type Props = QueryEditorProps<DataSource, MyQuery, DataSourceOptions>;
 
 const isValidJson = function (text: string): boolean {
   try {
