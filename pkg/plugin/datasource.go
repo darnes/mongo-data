@@ -6,12 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
-
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -37,7 +38,7 @@ type secretConfigModel struct {
 }
 
 // NewDatasource creates a new datasource instance.
-func NewDatasource(s backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
+func NewDatasource(ctx context.Context, s backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
 
 	backend.Logger.Info("new-data-source", "data", s.JSONData, "d", s.DecryptedSecureJSONData)
 	cm := configModel{}
@@ -134,7 +135,12 @@ func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query 
 	if err != nil {
 		return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("json unmarshal: %v", err.Error()))
 	}
-	backend.Logger.Info("parsed query", "qm", qm)
+	backend.Logger.Info("parsed query",
+		"qm", qm,
+		"range-from", query.TimeRange.From,
+		"range-to", query.TimeRange.To,
+		"suggested-interval", query.Interval,
+	)
 	var extJsonQuery interface{}
 
 	err = bson.UnmarshalExtJSON([]byte(qm.QueryText), true, &extJsonQuery)
@@ -181,20 +187,26 @@ func bsonToFrames(dbResp []bson.M) []*data.Field {
 		for key, v := range dbResp[0] {
 			if reflect.TypeOf(v).Name() == "string" {
 				fields = append(fields, data.NewField(key, nil, getValues[string](key, dbResp)))
-
 			} else if reflect.TypeOf(v).Name() == "int" {
 				fields = append(fields, data.NewField(key, nil, getValues[int](key, dbResp)))
 
 			} else if reflect.TypeOf(v).Name() == "int32" {
 				fields = append(fields, data.NewField(key, nil, getValues[int32](key, dbResp)))
+			} else if reflect.TypeOf(v).Name() == "int64" {
+				fields = append(fields, data.NewField(key, nil, getValues[int64](key, dbResp)))
+			} else if reflect.TypeOf(v).Name() == "float32" {
+				fields = append(fields, data.NewField(key, nil, getValues[float32](key, dbResp)))
+
 			} else if reflect.TypeOf(v).Name() == "float64" {
 				fields = append(fields, data.NewField(key, nil, getValues[float64](key, dbResp)))
+			} else if reflect.TypeOf(v).Name() == "DateTime" {
+				fields = append(fields, data.NewField(key, nil, getDateTimeValues(key, dbResp)))
 			} else {
 				// $group: {_id: "$type", total: {$avg: "$r"}, }}
 				//ObjectID is not implemented yet
 				// it has nice .toString  method can be used.
 				// no idea how handy it may be.
-				backend.Logger.Info("unknown type", "t", reflect.TypeOf(v).Name())
+				backend.Logger.Info("unexpected type", "t", reflect.TypeOf(v).Name())
 			}
 		}
 	}
@@ -203,8 +215,26 @@ func bsonToFrames(dbResp []bson.M) []*data.Field {
 	// }
 	return fields
 }
+func getDateTimeValues(key string, source []bson.M) []time.Time {
+	var res []time.Time
+	// looping over full dataset reading and converting only `key` value
+	for _, se := range source {
+		val := se[key]
+		el, ok := val.(primitive.DateTime)
 
-func getValues[T int32 | int | string | float64](key string, source []bson.M) []T {
+		if !ok {
+			backend.Logger.Error(
+				"failed to convert to primitive.DateTime",
+				"key", key, "data", val,
+				"dtype-name", reflect.TypeOf(val).Name(),
+			)
+		}
+		res = append(res, el.Time())
+	}
+	return res
+}
+
+func getValues[T int32 | int64 | int | string | float32 | float64](key string, source []bson.M) []T {
 	var res []T
 
 	for _, se := range source {

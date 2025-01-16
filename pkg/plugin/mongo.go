@@ -2,10 +2,7 @@ package plugin
 
 import (
 	"bytes"
-	"context"
 	"fmt"
-	"log"
-	"os"
 	"strings"
 
 	"crypto/tls"
@@ -14,8 +11,6 @@ import (
 
 	"github.com/youmark/pkcs8"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -40,7 +35,7 @@ func updateClientWithSecrets(o *options.ClientOptions, sd secretConfigModel) err
 	}
 
 	// end of handling tlsCertificateKeyFile
-
+	return nil
 }
 
 func addClientCertFromBytes(cfg *tls.Config, data []byte, keyPasswd string) (string, error) {

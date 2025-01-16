@@ -3,6 +3,7 @@ version: '3.0'
 services:
   grafana:
     container_name: 'ueon-mongodata-datasource'
+    # network_mode: "host"
     build:
       context: ./.config
       args:
