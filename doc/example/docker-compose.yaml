@@ -1,0 +1,21 @@
+version: '3.1'
+
+services:
+
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+
+  grafana:
+    image: grafana/grafana-oss
+    ports:
+      - 3000:3000/tcp
+    environment:
+      GF_DATE_FORMATS_DEFAULT_TIMEZONE: "UTC+00:00"
+      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: "ueon-mongodata-datasource"
+
+    volumes:
+      - ./ueon-mongodata-datasource:/var/lib/grafana/plugins/ueon-mongodata-datasource
