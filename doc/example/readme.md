@@ -1,4 +1,4 @@
-# usage
+# Quick start guide
 
 Run following commands:
 ```sh
@@ -36,7 +36,7 @@ services:
 
 ```
 
-## start containers  
+## Start containers  
 ```sh
 docker compose up
 ```
@@ -67,17 +67,21 @@ db.stocks.insertMany([
 ]);
 ```
 
-## Connect
+## Connect & explore
 Navigate to grafana: `http://localhost:3000/`, login, navigate to [datasources](http://localhost:3000/connections/datasources/new);
+
 Select `Mondo Data`, use connection string: `mongodb://admin:admin@mongo:27017/`, click `Save & test`;
 
 Make sure that you can see banner `connection to DB established`
 
 Now, navigate to New Panel creation, enter following details:
-DB: `ts`
-collection: `stocks`
-`Query`: `[]`
+
+ * DB: `ts`
+ * collection: `stocks`
+ * Query: `[]`
+
 Click `Save Dashboard`;
+
 You should be able to see the data now:
 ![Sample Panel](../img/sample-panel.png)
 
